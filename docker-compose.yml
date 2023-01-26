@@ -1,0 +1,99 @@
+version: "3.7"
+services:
+  database:
+    restart: unless-stopped
+    build: .
+    container_name: database
+    expose:
+      - 8888
+    volumes:
+      - ./database:/home/work
+      - ./backend:/home/work/backend
+      - ./history:/home/work/history
+      - ./env:/home/work/env:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=Asia/Taipei
+    env_file:
+      - ./env/.env
+    networks:
+      - my_network
+    command:
+      ['python3', main.py]
+
+  portfolio:
+    restart: unless-stopped
+    build: .
+    container_name: portfolio
+    ports:
+      - 9999:9999
+    volumes:
+      - ./portfolio:/home/work
+      - ./history:/home/work/history
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=Asia/Taipei
+    networks:
+      - my_network
+    depends_on:
+      - database
+      - redis
+    command:
+      ['python3', main.py]
+
+  sentry:
+    restart: unless-stopped
+    build: .
+    container_name: sentry
+    volumes:
+      - ./portfolio:/home/work
+      - ./history:/home/work/history
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=Asia/Taipei
+    networks:
+      - my_network
+    depends_on:
+      - database
+      - redis
+      - portfolio
+    command:
+      ['python3', sentry.py]
+
+  redis:
+    container_name: redis
+    image: redis:latest
+    restart: always
+    expose:
+      - 6379
+    volumes: 
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    command: redis-server
+    environment:
+      - TZ=Asia/Taipei
+      - SLAVEOF_NO_ONE=yes
+    networks:
+      - my_network
+
+  web:
+    restart: unless-stopped
+    build: .
+    container_name: web
+    ports:
+      - 8501:8501
+    volumes:
+      - ./web:/home/work
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=Asia/Taipei
+    networks:
+      - my_network
+    command: ["streamlit", "run", "streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
+networks:
+  my_network:

@@ -1,0 +1,16 @@
+fastapi>=0.68.0,<0.69.0
+pydantic>=1.8.0,<2.0.0
+uvicorn>=0.15.0,<0.16.0
+beautifulsoup4
+loguru
+ipython
+pandas
+numpy
+pandas-ta
+plotly==5.11.0
+tqdm
+python-dotenv
+vectorbt
+redis
+shioaji
+streamlit

@@ -1,0 +1,8 @@
+*.pkl*
+*.env*
+*.db*
+*pickle*
+*.pyc*
+*.log*
+*.pfx*
+*DS_Store*
