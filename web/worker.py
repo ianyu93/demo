@@ -14,10 +14,10 @@ class Worker:
         if mode == 1:
             self.db = 'http://database:8888/'
             self.pf = 'http://portfolio:9999/'
-        if mode == 2:
+        elif mode == 2:
             self.db = 'http://127.0.0.1:8888/'
             self.pf = 'http://127.0.0.1:9999/'
-        if mode == 3:
+        elif mode == 3:
             self.db = 'http://172.104.98.170:8888/'
             self.pf = 'http://172.104.98.170:9999/'
         self.__plot = Plotter()
@@ -32,11 +32,9 @@ class Worker:
             return x.map(lambda y:'L' if (y == 0) | (y == '0') else 'S')
         if 'status' in x.name:
             return x.map(lambda y:'Open' if (y == 0) | (y == '0') else 'Closed')
-        if ('sn' == x.name) | ('symbol' == x.name):
+        if (x.name == 'sn') | (x.name == 'symbol'):
             return x
-        if ('test_mode' == x.name):
-            return x == 'True'
-        return x.astype(float)
+        return x == 'True' if x.name == 'test_mode' else x.astype(float)
 
     def get_performance(self) -> pd.DataFrame:
         url = self.pf + 'performance'
@@ -49,29 +47,28 @@ class Worker:
     def get_trades(self, test:bool=False) -> pd.DataFrame:
         url = self.pf + 'trades'
         r = requests.get(url,)
-        if r.status_code == 200:
-            trades = pd.DataFrame(r.json()).apply(self.data_parser).sort_values('exit_time').iloc[:, 1:].reset_index(drop=True)
-            return pd.DataFrame(dict(
-            direction = trades.direction,
-            entry_time = trades.entry_time,
-            entry_price = trades.entry_price,
-            exit_time = trades.exit_time,
-            exit_price = trades.exit_price,
-            pnl = trades.pnl,
-            pct = trades.pct * 100,
-            mae = trades.mae,
-            g_mfe = trades.g_mfe,
-            mfe = trades.mfe,
-            mae_lv1 = trades.mae_lv1,
-            h2c = trades.h2c,
-            l2c = trades.l2c,
-            sn = trades.sn,
-            symbol = trades.symbol,
-            status = trades.status,
-            test_mode = trades.test_mode,
-            ))
-        else:
+        if r.status_code != 200:
             return r.status_code
+        trades = pd.DataFrame(r.json()).apply(self.data_parser).sort_values('exit_time').iloc[:, 1:].reset_index(drop=True)
+        return pd.DataFrame(dict(
+        direction = trades.direction,
+        entry_time = trades.entry_time,
+        entry_price = trades.entry_price,
+        exit_time = trades.exit_time,
+        exit_price = trades.exit_price,
+        pnl = trades.pnl,
+        pct = trades.pct * 100,
+        mae = trades.mae,
+        g_mfe = trades.g_mfe,
+        mfe = trades.mfe,
+        mae_lv1 = trades.mae_lv1,
+        h2c = trades.h2c,
+        l2c = trades.l2c,
+        sn = trades.sn,
+        symbol = trades.symbol,
+        status = trades.status,
+        test_mode = trades.test_mode,
+        ))
 
     def get_trades_less(self, test:bool=False) -> pd.DataFrame:
         trades = self.get_trades(test)
@@ -92,29 +89,20 @@ class Worker:
     def get_signals(self) -> pd.DataFrame:
         url = self.pf + 'signals'
         r = requests.get(url,)
-        if r.status_code == 200:
-            return r.json()
-        else:
-            return r.status_code
+        return r.json() if r.status_code == 200 else r.status_code
 
     def get_orders(self) -> pd.DataFrame:
         url = self.pf + 'orders'
         r = requests.get(url,)
-        if r.status_code == 200:
-            return r.json()
-        else:
-            return r.status_code
+        return r.json() if r.status_code == 200 else r.status_code
 
     def get_strategies_name(self) -> list:
         url = self.pf + 'strategies_name_list'
         r = requests.get(url)
-        if r.status_code == 200:
-            return r.json()
-        else:
-            return r.status_code
+        return r.json() if r.status_code == 200 else r.status_code
 
     def plot_strategy_figs(self, strategy_name:str) -> tuple:
-        trades = self.get_trades().query(f"`sn` == @strategy_name")
+        trades = self.get_trades().query("`sn` == @strategy_name")
         performance = self.get_performance().loc[strategy_name]
 
         fig = self.__plot.plot_pnl_kbar(trades)

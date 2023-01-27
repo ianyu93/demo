@@ -94,6 +94,4 @@ class ShioajiDatabase(ShioajiRouter):
         if len(raw_data) == 0:
             return pd.DataFrame()
         kbar_data = self.dp_ticks_to_1T(raw_data)
-        if len(kbar_data) == 0:
-            return pd.DataFrame()
-        return kbar_data
+        return pd.DataFrame() if len(kbar_data) == 0 else kbar_data

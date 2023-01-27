@@ -68,76 +68,83 @@ class Order():
     def gen_orders(self) -> dict:
         data = self.signal
         orders = {}
+        cash = 1
         for tag in self.tags:
             order_kind = tag[-3]
             order_type = tag[-4]
             stop_followed_price = tag[-2]
             price_type = tag[-1]
-            cash = int(1)
             tag = '|'.join(tag)
-            if 'entry_order' == order_kind:
+            if order_kind == 'entry_order':
                 delay_adjust = 1 if data['delay_type'] == 'up' else -1
                 delay_point = Decimal(data['delay_point']) * delay_adjust
                 order = dict(
                     order_kind=order_kind,
                     symbol=data['symbol'],
                     product=data['product'],
-                    is_stop_order = True if 'touch' in order_type else False,
-                    stop_followed_price = stop_followed_price,
-                    stop_price = Decimal(data[stop_followed_price]) + Decimal(delay_point),
-                    followed_price = Decimal(data[stop_followed_price]),
-                    cash = cash,
-                    direction = 'Buy' if data['direction'] in ['L', 'l'] else 'Sell',
-                    price_type=price_type
+                    is_stop_order='touch' in order_type,
+                    stop_followed_price=stop_followed_price,
+                    stop_price=Decimal(data[stop_followed_price])
+                    + Decimal(delay_point),
+                    followed_price=Decimal(data[stop_followed_price]),
+                    cash=cash,
+                    direction='Buy' if data['direction'] in ['L', 'l'] else 'Sell',
+                    price_type=price_type,
                 )
                 order['tag'] = tag
                 orders[order_kind] = order
-            elif 'sp_exit_order' == order_kind:
+            elif order_kind == 'exit_order':
+                order = dict(
+                    order_kind=order_kind,
+                    symbol=data['symbol'],
+                    product=data['product'],
+                    is_stop_order='touch' in order_type,
+                    stop_followed_price=stop_followed_price,
+                    stop_price=Decimal(data[stop_followed_price]),
+                    followed_price=Decimal(data[stop_followed_price]),
+                    cash=cash,
+                    direction='Buy'
+                    if data['direction'] not in ['L', 'l']
+                    else 'Sell',
+                    price_type=price_type,
+                )
+                order['tag'] = tag
+                orders[order_kind] = order
+            elif order_kind == 'sp_exit_order':
                 sp_adjust = 1 if data['direction'] not in ['L', 'l'] else -1
                 sp_point = Decimal(data['stop_loss']) * sp_adjust
                 order = dict(
                     order_kind=order_kind,
                     symbol=data['symbol'],
                     product=data['product'],
-                    is_stop_order = True if 'touch' in order_type else False,
-                    stop_followed_price = stop_followed_price,
-                    stop_price = Decimal(data[stop_followed_price]) + sp_point,
-                    followed_price = Decimal(data[stop_followed_price]),
-                    cash = cash,
-                    direction = 'Buy' if data['direction'] not in ['L', 'l'] else 'Sell',
-                    price_type=price_type
+                    is_stop_order='touch' in order_type,
+                    stop_followed_price=stop_followed_price,
+                    stop_price=Decimal(data[stop_followed_price]) + sp_point,
+                    followed_price=Decimal(data[stop_followed_price]),
+                    cash=cash,
+                    direction='Buy'
+                    if data['direction'] not in ['L', 'l']
+                    else 'Sell',
+                    price_type=price_type,
                 )
                 order['tag'] = tag
                 orders[order_kind] = order
-            elif 'tp_exit_order' == order_kind:
+            elif order_kind == 'tp_exit_order':
                 tp_adjust = 1 if data['direction'] in ['L', 'l'] else -1
                 tp_point = Decimal(data['take_profit']) * tp_adjust
                 order = dict(
                     order_kind=order_kind,
                     symbol=data['symbol'],
                     product=data['product'],
-                    is_stop_order = True if 'touch' in order_type else False,
-                    stop_followed_price = stop_followed_price,
-                    stop_price = Decimal(data[stop_followed_price]) + tp_point,
-                    followed_price = Decimal(data[stop_followed_price]),
-                    cash = cash,
-                    direction = 'Buy' if data['direction'] not in ['L', 'l'] else 'Sell',
-                    price_type=price_type
-                )
-                order['tag'] = tag
-                orders[order_kind] = order
-            elif 'exit_order' == order_kind:
-                order = dict(
-                    order_kind=order_kind,
-                    symbol=data['symbol'],
-                    product=data['product'],
-                    is_stop_order = True if 'touch' in order_type else False,
-                    stop_followed_price = stop_followed_price,
-                    stop_price = Decimal(data[stop_followed_price]),
-                    followed_price = Decimal(data[stop_followed_price]),
-                    cash = cash,
-                    direction = 'Buy' if data['direction'] not in ['L', 'l'] else 'Sell',
-                    price_type=price_type
+                    is_stop_order='touch' in order_type,
+                    stop_followed_price=stop_followed_price,
+                    stop_price=Decimal(data[stop_followed_price]) + tp_point,
+                    followed_price=Decimal(data[stop_followed_price]),
+                    cash=cash,
+                    direction='Buy'
+                    if data['direction'] not in ['L', 'l']
+                    else 'Sell',
+                    price_type=price_type,
                 )
                 order['tag'] = tag
                 orders[order_kind] = order
@@ -326,9 +333,7 @@ class IStrategy(ABC):
         if isinstance(entry_time, pd.Series):
             ret.index = entry_time
         ret.index = pd.to_datetime(ret.index)
-        temp = {}
-        temp['trades'] = int(len(ret))
-        temp['win_ratio'] = (ret > 0).sum() / len(ret)
+        temp = {'trades': len(ret), 'win_ratio': (ret > 0).sum() / len(ret)}
         temp['profit_factor'] = abs(ret[ret > 0].sum() / ret[ret <= 0].sum())
         temp['recovery_factor'] = ret.sum() / (ret.cumsum().cummax() - ret.cumsum()).max()
         temp['expect_payoff'] = (ret[(ret > 0)].mean() * temp['win_ratio'] + ret[~(ret > 0)].mean() * (1 - temp['win_ratio']))
@@ -419,7 +424,6 @@ class IStrategy(ABC):
                 mafe['mfe_idx'].append(mfe_idx)
 
                 mafe['mae_lv1'].append(low[mae_lv1_idx])
-                mafe['mae_lv1_idx'].append(mae_lv1_idx)
             else:
                 cond = (temp_high == temp_high.max())
                 mae_idx = temp_high.reset_index()[cond.values].index[0] + le
@@ -450,8 +454,7 @@ class IStrategy(ABC):
                 mafe['mfe_idx'].append(mfe_idx)
 
                 mafe['mae_lv1'].append(high[mae_lv1_idx])
-                mafe['mae_lv1_idx'].append(mae_lv1_idx)
-
+            mafe['mae_lv1_idx'].append(mae_lv1_idx)
             for i, v in list(mafe.items()):
                 if len(v) == 0:
                     del mafe[i]
@@ -470,12 +473,15 @@ class IStrategy(ABC):
 
     @staticmethod
     def convert_mafe_to_atr(ret_mafe, entry_price:pd.Series, atr:pd.Series=None):
-        mafe_point = ret_mafe[[i for i in ret_mafe.columns if not 'idx' in i]].apply(lambda x:abs(x-entry_price) if not x.name in ['h2c', 'l2c'] else x)
+        mafe_point = ret_mafe[
+            [i for i in ret_mafe.columns if 'idx' not in i]
+        ].apply(
+            lambda x: abs(x - entry_price) if x.name not in ['h2c', 'l2c'] else x
+        )
         mafe_idx_atr = ret_mafe[[i for i in ret_mafe.columns if 'idx' in i]].applymap(lambda x:atr[x])
         mafe_atr = mafe_point.copy() * 0
         mafe_atr += mafe_point.values / mafe_idx_atr.values
-        mafe_atr = round(mafe_atr, 3)
-        return mafe_atr
+        return round(mafe_atr, 3)
 
     @staticmethod
     def plot_pnl_kbar(ret:pd.DataFrame, plot_duration_vol=True, show_xaxis=False):

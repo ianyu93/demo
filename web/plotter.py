@@ -14,9 +14,7 @@ class Plotter(ABC):
         if isinstance(entry_time, pd.Series):
             ret.index = entry_time
         ret.index = pd.to_datetime(ret.index)
-        temp = {}
-        temp['trades'] = int(len(ret))
-        temp['win_ratio'] = (ret > 0).sum() / len(ret)
+        temp = {'trades': len(ret), 'win_ratio': (ret > 0).sum() / len(ret)}
         temp['profit_factor'] = abs(ret[ret > 0].sum() / ret[ret <= 0].sum())
         temp['recovery_factor'] = ret.sum() / (ret.cumsum().cummax() - ret.cumsum()).max()
         temp['expect_payoff'] = (ret[(ret > 0)].mean() * temp['win_ratio'] + ret[~(ret > 0)].mean() * (1 - temp['win_ratio']))

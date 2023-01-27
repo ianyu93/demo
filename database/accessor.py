@@ -69,12 +69,8 @@ class Accessor:
         new_data = self.api.get_redis_kbar_data(contract.code)
         if len(new_data) == 0:
             new_data = self.api.get_kbar(self.contracts['contract_basic'], str(local_1T_data.index[-1].date() - pd.Timedelta(1, 'day')))
-        else:
-            if new_data.index[0] > local_1T_data.index[-2]:
-                new_data = self.api.get_kbar(self.contracts['contract_basic'], str(local_1T_data.index[-1].date() - pd.Timedelta(1, 'day')))
-            else:
-                # 不做任何動作，使用redis取出來的資料
-                pass
+        elif new_data.index[0] > local_1T_data.index[-2]:
+            new_data = self.api.get_kbar(self.contracts['contract_basic'], str(local_1T_data.index[-1].date() - pd.Timedelta(1, 'day')))
         data = self.df.dp_merge_data(old_data=local_1T_data, new_data=new_data)
         data = data.loc[start_date:].copy()
         self.df.store_1T_data(data, rebuild=True)

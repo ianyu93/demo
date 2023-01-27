@@ -10,13 +10,13 @@ class Sentry:
     def __init__(self, mode:int=3) -> None:
         self.tradable_data_path = 'tradable'
         self.full_data_path = 'full'
-        if mode == 1: # production
+        if mode == 1:
             self.db = 'http://database:8888/'
             self.pf = 'http://portfolio:9999/'
-        if mode == 2: # dev
+        elif mode == 2:
             self.db = 'http://127.0.0.1:8888/'
             self.pf = 'http://127.0.0.1:9999/'
-        if mode == 3:
+        elif mode == 3:
             self.db = 'http://172.104.98.170:8888/'
             self.pf = 'http://172.104.98.170:9999/'
         self.setup_directory()
@@ -30,9 +30,7 @@ class Sentry:
 
     @staticmethod
     def symbol_transfer(symbol:str) -> str:
-        if 'MXF' in symbol:
-            return 'TXF'
-        return symbol
+        return 'TXF' if 'MXF' in symbol else symbol
 
     @staticmethod
     def get_strategies_name_list() -> list:
@@ -59,12 +57,20 @@ class Sentry:
             config['symbol'] = self.symbol_transfer(config['symbol'])
             if (config['product'] == 'future') & ('R2' not in config['symbol']) & ('R1' not in config['symbol']):
                 config['symbol'] += 'R1'
-            data_config_dict = {}
-            data_config_dict['code'] = config['symbol']
-            data_config_dict['frequency'] = config['freq']
-            data_config_dict['product'] = config['product']
-            # 決定 tradable 資料起點日期
-            data_config_dict['start_date'] = str(pd.Timestamp.today().date() - pd.Timedelta(lookback_days, 'day')) if not isinstance(config['lookback_days'], int) else str(pd.Timestamp.today().date() - pd.Timedelta(config['lookback_days'], 'day'))
+            data_config_dict = {
+                'code': config['symbol'],
+                'frequency': config['freq'],
+                'product': config['product'],
+                'start_date': str(
+                    pd.Timestamp.today().date()
+                    - pd.Timedelta(config['lookback_days'], 'day')
+                )
+                if isinstance(config['lookback_days'], int)
+                else str(
+                    pd.Timestamp.today().date()
+                    - pd.Timedelta(lookback_days, 'day')
+                ),
+            }
             data_config_dict['file_path'] = self.tradable_data_path
             data_config_dict['other'] = 'BA'
             if data_config_dict not in data_config_list:
@@ -72,10 +78,8 @@ class Sentry:
             data_config_dict['other'] = None
             if data_config_dict not in data_config_list:
                 data_config_list.append(data_config_dict.copy())
-            
-            subscribtion_dict = {}
-            subscribtion_dict['code'] = config['symbol']
-            subscribtion_dict['product'] = config['product']
+
+            subscribtion_dict = {'code': config['symbol'], 'product': config['product']}
             if subscribtion_dict not in subscribtion_list:
                 subscribtion_list.append(subscribtion_dict)
         self.subscribtion_list = subscribtion_list
@@ -105,10 +109,7 @@ class Sentry:
         )
         url = self.db + 'data'
         r = requests.put(url, params=params)
-        if r.status_code == 200:
-            return r.json() 
-        else:
-            return r.status_code
+        return r.json() if r.status_code == 200 else r.status_code
 
     def run_database(self) -> None:
         url = self.db + 'bot'
@@ -143,7 +144,7 @@ class Sentry:
         method = logics.strategies[strategy_name]
 
         symbol = self.symbol_transfer(method.config.symbol)
-        other = 'BA' if 'future' == method.config.product else None
+        other = 'BA' if method.config.product == 'future' else None
         if ('R1' not in method.config.symbol) & (method.config.product == 'future'):
             symbol += 'R1'
 
@@ -155,14 +156,13 @@ class Sentry:
             start_date = None
         self.update_data(start_date=start_date, **dc.dict())
         ohlcv = qd.load_kbar()
-        data = method.get_last_signal(ohlcv)
-        return data
+        return method.get_last_signal(ohlcv)
 
     def get_last_orders(self, strategy_name:str) -> dict:
         method = logics.strategies[strategy_name]
 
         symbol = self.symbol_transfer(method.config.symbol)
-        other = 'BA' if 'future' == method.config.product else None
+        other = 'BA' if method.config.product == 'future' else None
         if ('R1' not in method.config.symbol) & (method.config.product == 'future'):
             symbol += 'R1'
 
@@ -174,14 +174,13 @@ class Sentry:
             start_date = None
         self.update_data(start_date=start_date, **dc.dict())
         ohlcv = qd.load_kbar()
-        data = method.get_orders(ohlcv)
-        return data
+        return method.get_orders(ohlcv)
 
     def get_last_performance(self, strategy_name:str=None, lookback_days:int=750) -> tuple:
         method = logics.strategies[strategy_name]
 
         symbol = self.symbol_transfer(method.config.symbol)
-        other = 'BA' if 'future' == method.config.product else None
+        other = 'BA' if method.config.product == 'future' else None
         if ('R1' not in method.config.symbol) & (method.config.product == 'future'):
             symbol += 'R1'
 

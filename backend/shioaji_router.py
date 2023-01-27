@@ -30,12 +30,11 @@ class ShioajiRouter:
         self.logout()
 
     def _update_contracts(self) -> None:
-        contracts = {
+        return {
             code: contract
             for name, iter_contract in self.api.Contracts
             for code, contract in iter_contract._code2contract.items()
         }
-        return contracts
 
     def get_current_stkfut_contract(self, code:str) -> BaseContract:
         current_month = self.contracts["TXFR1"].delivery_month
@@ -140,11 +139,13 @@ class ShioajiRouter:
             y = pd.DataFrame(dict(self.api.daily_quotes(d.to_pydatetime().date(), timeout=90000)))
             temp = pd.concat([temp, y])
 
-        temp_ohlcv = {}
         col = ['Low', 'High', 'Volume', 'Amount', 'Open', 'Close']
-        for col_name in col:
-            temp_ohlcv[col_name[:1].lower()] = temp.dropna().pivot_table(col_name, 'Date', 'Code')
-        return temp_ohlcv
+        return {
+            col_name[:1]
+            .lower(): temp.dropna()
+            .pivot_table(col_name, 'Date', 'Code')
+            for col_name in col
+        }
 
     def subscribe(self, contract:BaseContract, quote_type:str='tick') -> None:
         quote_type = sj.constant.QuoteType.Tick if quote_type == 'tick' else sj.constant.QuoteType.BidAsk
