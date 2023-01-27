@@ -23,7 +23,7 @@ class Settlement:
         df = {}
         for row in s.find_all('tr',{'bgcolor':'#FFFFFF', 'class':'12bk'}):
             tse = row.find('td', dict(align='right', width='10%')).get_text(strip=True)
-            if '-' == tse:
+            if tse == '-':
                 continue
             date = row.find('td', dict(align='middle', width='14%')).get_text(strip=True).replace('/', '-')
             month = row.find('td', dict(align='middle', width='10%')).get_text(strip=True)

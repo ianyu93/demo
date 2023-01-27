@@ -65,11 +65,10 @@ class DataFile:
     def store_1T_data(self, data:pd.DataFrame=None, rebuild:bool=False) -> None:
         if not self.is_kbarfile_1T_exist():
             pd.to_pickle(data, self.fn_1T)
+        elif rebuild:
+            pd.to_pickle(data, self.fn_1T)
         else:
-            if rebuild:
-                pd.to_pickle(data, self.fn_1T)
-            else:
-                print(f'{self.fn_1T} is existed. If you want to rebuild it make rebuild arg as True')
+            print(f'{self.fn_1T} is existed. If you want to rebuild it make rebuild arg as True')
 
     def update_data(self, data:pd.DataFrame=None, start_date:str=None,) -> None:
         """

@@ -27,12 +27,11 @@ def del_client():
 
 @app.get("/bot")
 def startbot(api=Depends(get_client)):
-    if not api._connected:
-        api.logout()
-        api.login()
-        return f'Bot is working.Bot Started at {api._connected_ts}'
-    else:
+    if api._connected:
         return f'Bot is activated at {api._connected_ts}'
+    api.logout()
+    api.login()
+    return f'Bot is working.Bot Started at {api._connected_ts}'
 
 @app.delete("/bot")
 def stopbot(api=Depends(del_client)):
@@ -62,7 +61,7 @@ def update_data(
         data_1 = df.load_kbar(3)
         return f'{data_1.index[-1]} {data_1.close.iloc[-1]}'
     else:
-        return f'Bot is not running'
+        return 'Bot is not running'
 
 @app.post("/data")
 def subscribe_data(
@@ -76,9 +75,9 @@ def subscribe_data(
     if isinstance(api, ShioajiDatabase):
         contracts = api.get_useful_contracts(code=code, product=product)
         api.subscribe(contracts['contract_current'])
-        return f'subscribe_data ok'
+        return 'subscribe_data ok'
     else:
-        return f'Bot is not running'
+        return 'Bot is not running'
 
 @app.delete("/data")
 def unsubscribe_data(
@@ -92,9 +91,9 @@ def unsubscribe_data(
     if isinstance(api, ShioajiDatabase):
         contracts = api.get_useful_contracts(code=code, product=product)
         api.unsubscribe(contracts['contract_current'])
-        return f'unsubscribe_data ok'
+        return 'unsubscribe_data ok'
     else:
-        return f'Bot is not running'
+        return 'Bot is not running'
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8888)

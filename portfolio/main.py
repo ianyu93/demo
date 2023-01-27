@@ -18,23 +18,19 @@ def strategies_name_list() -> list:
 
 @app.get("/trades")
 def get_trades() -> dict:
-    temp_trades = pd.read_pickle('history/reports/trades.pkl')
-    return temp_trades
+    return pd.read_pickle('history/reports/trades.pkl')
 
 @app.get("/signals")
 def get_signals() -> dict:
-    signals = pd.read_pickle('history/reports/signals.pkl')
-    return signals
+    return pd.read_pickle('history/reports/signals.pkl')
 
 @app.get("/orders")
 def get_orders() -> dict:
-    orders = pd.read_pickle('history/reports/orders.pkl')
-    return orders
+    return pd.read_pickle('history/reports/orders.pkl')
 
 @app.get("/performance")
 def get_performance() -> dict:
-    temp_performance = pd.read_pickle('history/reports/performance.pkl')
-    return temp_performance
+    return pd.read_pickle('history/reports/performance.pkl')
 
 @app.post("/portfolio")
 def gen_portfolio(lookback_days:int=750, test_all:bool=False, pw:str=None, sentry=Depends(get_sentry)) -> dict:

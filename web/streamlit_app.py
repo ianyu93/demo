@@ -38,11 +38,11 @@ def figs():
 ###############################################################################################################################################################################
 
 def portfolio_summary(symbol:str, trades:pd.DataFrame, trades_less:pd.DataFrame):
-    if (symbol == '') | (symbol == 'end'):
+    if (not symbol) | (symbol == 'end'):
         return
 
     # mode_list = ['Online', 'Testing', 'ALL']
-    
+
     # for mode, col in zip(mode_list, st.columns([1 for i in mode_list])):
     #     with col:
     #         if mode == 'Online':
@@ -66,8 +66,16 @@ def portfolio_summary(symbol:str, trades:pd.DataFrame, trades_less:pd.DataFrame)
     #     trades = get_worker().get_trades().query(f'`symbol` == @symbol').drop(['symbol'], axis=1).reset_index(drop=True)[::-1]
     #     trades_less = get_worker().get_trades_less().query(f'`symbol` == @symbol').drop(['symbol'], axis=1).reset_index(drop=True)[::-1]
 
-    trades = trades.query(f'`symbol` == @symbol').drop(['symbol'], axis=1).reset_index(drop=True)[::-1]
-    trades_less = trades_less.query(f'`symbol` == @symbol').drop(['symbol'], axis=1).reset_index(drop=True)[::-1]
+    trades = (
+        trades.query('`symbol` == @symbol')
+        .drop(['symbol'], axis=1)
+        .reset_index(drop=True)[::-1]
+    )
+    trades_less = (
+        trades_less.query('`symbol` == @symbol')
+        .drop(['symbol'], axis=1)
+        .reset_index(drop=True)[::-1]
+    )
 
     plot_strategies = list(trades.groupby('sn').apply(lambda x:x.g_mfe.sum() / x.mae.sum()).sort_values()[::-1].index)
     temp = list(trades.groupby('sn').apply(lambda x:x.g_mfe.sum() / x.mae.sum()).sort_values()[::-1].index)
@@ -77,7 +85,7 @@ def portfolio_summary(symbol:str, trades:pd.DataFrame, trades_less:pd.DataFrame)
             if not st.checkbox(sn, True):
                 temp.remove(sn)
 
-    if len(temp) == 0:
+    if not temp:
         st.markdown('### Please select a strategy above.👆')
         return
     else:
@@ -104,15 +112,19 @@ def portfolio_summary(symbol:str, trades:pd.DataFrame, trades_less:pd.DataFrame)
                 long_strategies = len([i for i in trades.sn.unique() if 'LONG' in i]),
                 short_strategies = len([i for i in trades.sn.unique() if 'LONG' not in i]),
             )
-            st.dataframe(pd.Series(performance, name=str(symbol)), use_container_width=True, width=200)
+            st.dataframe(
+                pd.Series(performance, name=symbol),
+                use_container_width=True,
+                width=200,
+            )
     with tab2:
         pw = st.text_input('space', label_visibility='hidden')
         if str(pw) == 'otter':
             trades = trades.set_index('sn').style.format(subset=['pnl', 'entry_price', 'exit_price', 'mae', 'mae_lv1', 'mfe', 'g_mfe', 'h2c', 'l2c', 'pct'], formatter="{:.2f}")
-            st.dataframe(trades, use_container_width=True)
         else:
             trades = trades_less.set_index('sn').style.format(subset=['pnl', 'entry_price', 'exit_price', 'pct'], formatter="{:.2f}")
-            st.dataframe(trades, use_container_width=True)
+
+        st.dataframe(trades, use_container_width=True)
 
 
 
@@ -122,8 +134,16 @@ def strategy_summary(sn:str, trades:pd.DataFrame, trades_less:pd.DataFrame, perf
     if (sn == ' ') | (sn == 'end '):
         return
     fig, fig2 = figs()[sn]['pnl_kbar'], figs()[sn]['mafe']
-    trades = trades.query(f'`sn` == @sn').drop(['sn'], axis=1).reset_index(drop=True)[::-1]
-    trades_less = trades_less.query(f'`sn` == @sn').drop(['sn'], axis=1).reset_index(drop=True)[::-1]
+    trades = (
+        trades.query('`sn` == @sn')
+        .drop(['sn'], axis=1)
+        .reset_index(drop=True)[::-1]
+    )
+    trades_less = (
+        trades_less.query('`sn` == @sn')
+        .drop(['sn'], axis=1)
+        .reset_index(drop=True)[::-1]
+    )
     symbol = trades.symbol.unique()
     pnl, pct = trades.set_index('exit_time')['pnl'], trades.set_index('exit_time')['pct']
     performance = performance.loc[sn]
@@ -153,10 +173,10 @@ def strategy_summary(sn:str, trades:pd.DataFrame, trades_less:pd.DataFrame, perf
         pw = st.text_input('space2', label_visibility='hidden')
         if str(pw) == 'otter':
             trades = trades.style.format(subset=['pnl', 'entry_price', 'exit_price', 'mae', 'mae_lv1', 'mfe', 'g_mfe', 'h2c', 'l2c', 'pct'], formatter="{:.2f}")
-            st.dataframe(trades, use_container_width=True)
         else:
             trades = trades_less.style.format(subset=['pnl', 'entry_price', 'exit_price', 'pct'], formatter="{:.2f}")
-            st.dataframe(trades, use_container_width=True)
+
+        st.dataframe(trades, use_container_width=True)
 
 ###############################################################################################################################################################################
 
